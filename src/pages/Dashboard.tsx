@@ -48,6 +48,7 @@ interface SuspiciousDomain {
     id: number;
     name: string;
   };
+  photo_url: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -280,6 +281,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
+    const BASE_URL = "http://127.0.0.1:8000/uploads/"
     if (selectedView === "sospechosos") {
       return (
         <TableContainer component={Paper} sx={{ mt: 3 }}>
@@ -290,6 +292,7 @@ const Dashboard: React.FC = () => {
                 <TableCell>Cliente</TableCell>
                 <TableCell>Dominio Sospechoso</TableCell>
                 <TableCell>Fecha Encontrado</TableCell>
+                <TableCell>Captura Tomada Del Sitio</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -299,6 +302,17 @@ const Dashboard: React.FC = () => {
                   <TableCell>{row.customer.name}</TableCell>
                   <TableCell>{row.suspicious_domain}</TableCell>
                   <TableCell>{new Date(row.found_date).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {row.photo_url ? (
+                      <img
+                        src={`${BASE_URL}${row.photo_url}`} // Concatenamos la URL completa
+                        alt="Captura del sitio"
+                        style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 8 }}
+                      />
+                    ) : (
+                      "No disponible"
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
