@@ -26,18 +26,30 @@ import {
 import { useNavigate } from "react-router-dom";
 import { lightBlue } from "@mui/material/colors";
 import axios from "axios";
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+interface Domain {
+  id: number;
+  domain: string;
+  customer_id: number;
+}
 
 interface Cliente {
   id: number;
   name: string;
-  domains: { domain: string }[];
+  domain_customers: Domain[];
 }
+
 
 interface SuspiciousDomain {
   id: number;
-  customer: string;
   suspicious_domain: string;
   found_date: string;
+  customer: {
+    id: number;
+    name: string;
+  };
+  photo_url: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -53,9 +65,10 @@ const Dashboard: React.FC = () => {
   const [dominiosSospechosos, setDominiosSospechosos] = useState<SuspiciousDomain[]>([]);
   const [selectedView, setSelectedView] = useState(""); // Controla la tabla a mostrar
   const [openAddCustomerPopup, setOpenAddCustomerPopup] = useState(false); // Estado para mostrar el popup "Agregar Cliente"
+  const [openAddDomainPopup, setOpenAddDomainPopup] = useState(false); // Estado para mostrar el popup "Agregar Cliente"
   const [openAddAccountPopup, setOpenAddAccountPopup] = useState(false); // Estado para mostrar el popup "Agregar Cuenta"
   const [formData, setFormData] = useState({ name: "", domains: "" }); // Datos del formulario para agregar cliente
-  const [addAccountData, setAddAccountData] = useState({ email: "", password: "" }); // Datos del formulario para agregar cuenta
+  const [addAccountData, setAddAccountData] = useState({name:"", email: "", password: "" }); // Datos del formulario para agregar cuenta
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -65,15 +78,21 @@ const Dashboard: React.FC = () => {
     setAnchorElUser(null);
   };
 
-  const handleOpenAddCustomerPopup = () => setOpenAddCustomerPopup(true);
+  const handleOpenAddCustomerPopup  = () => setOpenAddCustomerPopup(true);
   const handleCloseAddCustomerPopup = () => {
     setFormData({ name: "", domains: "" }); // Reiniciar el formulario
     setOpenAddCustomerPopup(false);
   };
 
+  const handleOpenAddDomainPopup = () => setOpenAddDomainPopup(true);
+  const handleCloseAddDomainPopup = () => {
+    setFormData({ name: "", domains: "" }); // Reiniciar el formulario
+    setOpenAddDomainPopup(false);
+  };
+
   const handleOpenAddAccountPopup = () => setOpenAddAccountPopup(true);
   const handleCloseAddAccountPopup = () => {
-    setAddAccountData({ email: "", password: "" }); // Reiniciar el formulario
+    setAddAccountData({ name:"", email: "", password: "" }); // Reiniciar el formulario
     setOpenAddAccountPopup(false);
   };
 
@@ -86,14 +105,19 @@ const Dashboard: React.FC = () => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8000/view_customers", {
+      const response = await axios.get(`${baseURL}/api/v1/customers/view`, {
         headers: {
-          Authorization: `Token ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      setClientesConDominios(response.data);
-      setSelectedView("dominios");
+      // Verificar si response.data es un objeto y si response.data.data es un array
+      if (response.data && Array.isArray(response.data.data)) {
+        setClientesConDominios(response.data.data);
+        setSelectedView("dominios");
+      } else {
+        setClientesConDominios([]);
+      }
     } catch (error) {
       console.error("Error al obtener clientes:", error);
       alert("Hubo un error al obtener los clientes. Verifica tu conexión o token.");
@@ -109,14 +133,22 @@ const Dashboard: React.FC = () => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8000/found_domains", {
+      const response = await axios.get(`${baseURL}/api/v1/suspicious-domains`, {
         headers: {
-          Authorization: `Token ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      setDominiosSospechosos(response.data);
-      setSelectedView("sospechosos");
+      if (response.data && Array.isArray(response.data.data)) {
+        setDominiosSospechosos(response.data.data);
+        setSelectedView("sospechosos");
+      } else {
+        console.error("La API no devuelve un array, revisa la estructura");
+        setDominiosSospechosos([]);
+      }
+
+      
+      
     } catch (error) {
       console.error("Error al obtener dominios sospechosos:", error);
       alert("Hubo un error al obtener los dominios sospechosos. Verifica tu conexión o token.");
@@ -138,14 +170,14 @@ const Dashboard: React.FC = () => {
         domains: domainsArray,
       };
 
-      const response = await axios.post("http://127.0.0.1:8000/add_customer", payload, {
+      await axios.post(`${baseURL}/api/v1/addcustomer`, payload, {
         headers: {
-          Authorization: `Token ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
 
-      console.log("Cliente agregado:", response.data);
+  
       alert("Cliente agregado exitosamente.");
       handleCloseAddCustomerPopup(); // Cerrar el popup
     } catch (error) {
@@ -153,6 +185,38 @@ const Dashboard: React.FC = () => {
       alert("Hubo un error al agregar el cliente. Intenta nuevamente.");
     }
   };
+
+  const handleAddDomianSubmit = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Token no encontrado. Inicia sesión nuevamente.");
+      return;
+    }
+
+    try {
+      const domainsArray = formData.domains.split(",").map((domain) => domain.trim());
+      const payload = {
+        name: formData.name,
+        domains: domainsArray,
+      };
+
+      await axios.post(`${baseURL}/api/v1/add-domain-to-customer`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+    
+      alert("Dominio Agregado exitosamente.");
+      handleCloseAddDomainPopup();
+    } catch (error) {
+      console.error("Error al agregar cuenta:", error);
+      alert("Hubo un error al agregar. Intenta nuevamente.");
+    }
+  };
+
 
   const handleAddAccountSubmit = async () => {
     const token = localStorage.getItem("token");
@@ -164,18 +228,18 @@ const Dashboard: React.FC = () => {
 
     try {
       const payload = {
+        name: addAccountData.name,
         email: addAccountData.email,
         password: addAccountData.password,
       };
 
-      const response = await axios.post("http://127.0.0.1:8000/register", payload, {
+      await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
         headers: {
-          Authorization: `Token ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
 
-      console.log("Cuenta agregada:", response.data);
       alert("Cuenta agregada exitosamente.");
       handleCloseAddAccountPopup(); // Cerrar el popup
     } catch (error) {
@@ -197,14 +261,18 @@ const Dashboard: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {clientesConDominios.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.name}</TableCell>
+            {clientesConDominios.map((cliente) => (
+                <TableRow key={cliente.id}>
+                  <TableCell>{cliente.id}</TableCell>
+                  <TableCell>{cliente.name}</TableCell>
                   <TableCell>
-                    {row.domains.map((domain, index) => (
-                      <Typography key={index}>{domain.domain}</Typography>
-                    ))}
+                    {cliente.domain_customers.length > 0 ? (
+                      cliente.domain_customers.map((domain) => (
+                        <Typography key={domain.id}>{domain.domain}</Typography>
+                      ))
+                    ) : (
+                      "No disponible"
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -214,6 +282,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
+    const BASE_URL = "http://127.0.0.1:8000/uploads/"
     if (selectedView === "sospechosos") {
       return (
         <TableContainer component={Paper} sx={{ mt: 3 }}>
@@ -224,15 +293,27 @@ const Dashboard: React.FC = () => {
                 <TableCell>Cliente</TableCell>
                 <TableCell>Dominio Sospechoso</TableCell>
                 <TableCell>Fecha Encontrado</TableCell>
+                <TableCell>Captura Tomada Del Sitio</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {dominiosSospechosos.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.customer}</TableCell>
+                  <TableCell>{row.customer.name}</TableCell>
                   <TableCell>{row.suspicious_domain}</TableCell>
                   <TableCell>{new Date(row.found_date).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {row.photo_url ? (
+                      <img
+                        src={`${BASE_URL}${row.photo_url}`} // Concatenamos la URL completa
+                        alt="Captura del sitio"
+                        style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 8 }}
+                      />
+                    ) : (
+                      "No disponible"
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -298,6 +379,9 @@ const Dashboard: React.FC = () => {
           <Button variant="contained" onClick={handleOpenAddCustomerPopup}>
             Agregar Cliente y Dominios
           </Button>
+          <Button variant="contained"  sx={{ bgcolor: "#009688" }}  onClick={handleOpenAddDomainPopup}>
+            Agregar Mas Dominios  Validos A Cliente
+          </Button>
           <Button variant="contained" color="success" onClick={fetchCustomers}>
             Ver clientes con dominios
           </Button>
@@ -335,10 +419,45 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Popup para Agregar mas dominios*/}
+      <Dialog open={openAddDomainPopup} onClose={handleCloseAddDomainPopup}>
+        <DialogTitle>Agregar  Dominios</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            label="Nombre del Cliente"
+            fullWidth
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Dominios (separados por coma)"
+            fullWidth
+            value={formData.domains}
+            onChange={(e) => setFormData({ ...formData, domains: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddDomainPopup}>Cancelar</Button>
+          <Button onClick={handleAddDomianSubmit} variant="contained" color="primary">
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Popup para Agregar Cuenta */}
       <Dialog open={openAddAccountPopup} onClose={handleCloseAddAccountPopup}>
         <DialogTitle>Agregar Cuenta</DialogTitle>
         <DialogContent>
+        <TextField
+            margin="dense"
+            label="Name"
+            type="text"
+            fullWidth
+            value={addAccountData.name}
+            onChange={(e) => setAddAccountData({ ...addAccountData, name: e.target.value })}
+          />
           <TextField
             margin="dense"
             label="Correo Electrónico"

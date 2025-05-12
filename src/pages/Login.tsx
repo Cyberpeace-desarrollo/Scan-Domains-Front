@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TextField, Button, Typography, Box, Card } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>(""); 
@@ -11,7 +12,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post("http://127.0.0.1:8000/login", {
+      const response = await axios.post(`${baseURL}/api/v1/auth/login`, {
         email,
         password,
       });
