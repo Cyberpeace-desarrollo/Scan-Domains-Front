@@ -282,7 +282,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    const BASE_URL = "http://127.0.0.1:8000/uploads/"
+    const BASE_URL = "http://10.0.2.134:81/uploads/"
     if (selectedView === "sospechosos") {
       return (
         <TableContainer component={Paper} sx={{ mt: 3 }}>
