@@ -26,6 +26,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { lightBlue } from "@mui/material/colors";
 import axios from "axios";
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 interface Domain {
   id: number;
@@ -104,7 +105,7 @@ const Dashboard: React.FC = () => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/v1/customers/view", {
+      const response = await axios.get(`${baseURL}/api/v1/customers/view`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -132,7 +133,7 @@ const Dashboard: React.FC = () => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/v1/suspicious-domains", {
+      const response = await axios.get(`${baseURL}/api/v1/suspicious-domains`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -169,7 +170,7 @@ const Dashboard: React.FC = () => {
         domains: domainsArray,
       };
 
-      await axios.post("http://127.0.0.1:8000/api/v1/addcustomer", payload, {
+      await axios.post(`${baseURL}/api/v1/addcustomer`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -200,7 +201,7 @@ const Dashboard: React.FC = () => {
         domains: domainsArray,
       };
 
-      await axios.post("http://127.0.0.1:8000/api/v1/add-domain-to-customer", payload, {
+      await axios.post(`${baseURL}/api/v1/add-domain-to-customer`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -232,7 +233,7 @@ const Dashboard: React.FC = () => {
         password: addAccountData.password,
       };
 
-      await axios.post("http://127.0.0.1:8000/api/v1/auth/createaccount", payload, {
+      await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
