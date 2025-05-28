@@ -4,7 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 
-const Login: React.FC = () => {
+const Login: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState<string>(""); 
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null); // Manejo de errores
@@ -19,6 +19,7 @@ const Login: React.FC = () => {
 
       const { token } = response.data;
       localStorage.setItem("token", token);
+      onLoginSuccess();
       navigate("/dashboard");
     } catch (err: unknown) {
       // Manejar errores
