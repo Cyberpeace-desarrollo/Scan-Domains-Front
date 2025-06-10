@@ -87,10 +87,7 @@ const Dashboard: React.FC = () => {
   const [openUserManagementPopup, setOpenUserManagementPopup] = useState(false); 
   const [formData, setFormData] = useState({ name: "", domains: "" }); 
   const [addAccountData, setAddAccountData] = useState({ name: "", email: "", password: "" }); 
-  const [users, setUsers] = useState<User[]>(() => {
-    const savedUsers = localStorage.getItem('localUsers');
-    return savedUsers ? JSON.parse(savedUsers) : [];
-  }); 
+  const [users, setUsers] = useState<User[]>([]);
   const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false); 
   const [userToDelete, setUserToDelete] = useState<User | null>(null); 
   const [openChangePasswordPopup, setOpenChangePasswordPopup] = useState(false); 
@@ -125,8 +122,8 @@ const Dashboard: React.FC = () => {
 
   const handleOpenUserManagementPopup = () => {
     setOpenUserManagementPopup(true);
+    fetchUsers(); 
   };
-
   const handleCloseUserManagementPopup = () => setOpenUserManagementPopup(false);
 
   const handleOpenChangePasswordPopup = () => {
@@ -204,6 +201,33 @@ const Dashboard: React.FC = () => {
       alert("Hubo un error al obtener los clientes. Verifica tu conexión o token.");
     }
   };
+  
+  const fetchUsers = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Token no encontrado. Inicia sesión nuevamente.");
+    return;
+  }
+
+  try {
+    const response = await axios.get(`${baseURL}/api/v1/users/list`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data && response.data.status && Array.isArray(response.data.data)) {
+      setUsers(response.data.data);
+    } else {
+      console.error("La API no devuelve la estructura esperada");
+      setUsers([]);
+    }
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    alert("Hubo un error al obtener los usuarios. Verifica tu conexión o token.");
+  }
+};
 
   const fetchSuspiciousDomains = async () => {
     const token = localStorage.getItem("token");
@@ -237,36 +261,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDeleteUserSubmit = async () => {
-    const token = localStorage.getItem("token");
+const handleDeleteUserSubmit = async () => {
+  const token = localStorage.getItem("token");
 
-    if (!token || !userToDelete) {
-      alert("Token no encontrado o usuario no seleccionado.");
-      return;
-    }
+  if (!token || !userToDelete) {
+    alert("Token no encontrado o usuario no seleccionado.");
+    return;
+  }
 
-    try {
-      await axios.delete(`${baseURL}/api/v1/auth/delete-account`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        data: { email: userToDelete.email }
-      });
+  try {
+    await axios.delete(`${baseURL}/api/v1/auth/deleteaccount`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      data: { email: userToDelete.email }
+    });
 
-      // Eliminar el usuario del estado local y localStorage
-      setUsers(prevUsers => {
-        const updatedUsers = prevUsers.filter(user => user.email !== userToDelete.email);
-        localStorage.setItem('localUsers', JSON.stringify(updatedUsers));
-        return updatedUsers;
-      });
-
-      alert("Usuario eliminado exitosamente.");
-      handleCloseDeleteUserDialog();
-    } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-      alert("Hubo un error al eliminar el usuario. Intenta nuevamente.");
-    }
-  };
+    alert("Usuario eliminado exitosamente.");
+    handleCloseDeleteUserDialog();
+    fetchUsers(); // Recargar la lista de usuarios
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    alert("Hubo un error al eliminar el usuario. Intenta nuevamente.");
+  }
+};
 
   const handleAddCustomerSubmit = async () => {
     const token = localStorage.getItem("token");
@@ -328,43 +346,39 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleAddAccountSubmit = async () => {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      alert("Token no encontrado. Inicia sesión nuevamente.");
-      return;
-    }
 
-    try {
-      const payload = {
-        name: addAccountData.name,
-        email: addAccountData.email,
-        password: addAccountData.password,
-      };
 
-      await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+const handleAddAccountSubmit = async () => {
+  const token = localStorage.getItem("token");
 
-      // Agregar el usuario al estado local y localStorage
-      const newUser = { name: addAccountData.name, email: addAccountData.email };
-      setUsers(prevUsers => {
-        const updatedUsers = [...prevUsers, newUser];
-        localStorage.setItem('localUsers', JSON.stringify(updatedUsers));
-        return updatedUsers;
-      });
+  if (!token) {
+    alert("Token no encontrado. Inicia sesión nuevamente.");
+    return;
+  }
 
-      alert("Cuenta agregada exitosamente.");
-      setAddAccountData({ name: "", email: "", password: "" });
-    } catch (error) {
-      console.error("Error al agregar cuenta:", error);
-      alert("Hubo un error al agregar la cuenta. Intenta nuevamente.");
-    }
-  };
+  try {
+    const payload = {
+      name: addAccountData.name,
+      email: addAccountData.email,
+      password: addAccountData.password,
+    };
+
+    await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    alert("Cuenta agregada exitosamente.");
+    setAddAccountData({ name: "", email: "", password: "" });
+    fetchUsers(); // Recargar la lista de usuarios
+  } catch (error) {
+    console.error("Error al agregar cuenta:", error);
+    alert("Hubo un error al agregar la cuenta. Intenta nuevamente.");
+  }
+};
 
   const handleChangePasswordSubmit = async () => {
     if (passwordData.password !== passwordData.confirmPassword) {
