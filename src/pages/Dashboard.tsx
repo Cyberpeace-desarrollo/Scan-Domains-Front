@@ -698,7 +698,7 @@ const handleAddAccountSubmit = async () => {
           Gestión de Usuarios
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
-          <Tabs value={userManagementTab} onChange={(e, newValue) => setUserManagementTab(newValue)} sx={{ mb: 3 }}>
+          <Tabs value={userManagementTab} onChange={(_, newValue) => setUserManagementTab(newValue)} sx={{ mb: 3 }}>
             <Tab label="Crear Cuenta" />
             <Tab label="Eliminar Cuenta" />
           </Tabs>
