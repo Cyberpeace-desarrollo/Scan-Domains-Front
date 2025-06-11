@@ -61,7 +61,6 @@ interface SuspiciousDomain {
 }
 
 interface User {
-  id: number;
   name: string;
   email: string;
 }
@@ -78,24 +77,23 @@ const Dashboard: React.FC = () => {
   const [clientesConDominios, setClientesConDominios] = useState<Cliente[]>([]);
   const [dominiosSospechosos, setDominiosSospechosos] = useState<SuspiciousDomain[]>([]);
   const [filteredDominiosSospechosos, setFilteredDominiosSospechosos] = useState<SuspiciousDomain[]>([]);
-  const [selectedView, setSelectedView] = useState(""); // Controla la tabla a mostrar
-  const [searchTerm, setSearchTerm] = useState(""); // Estado para el buscador
-  const [darkMode, setDarkMode] = useState(false); // Estado para el modo oscuro
-  const [openImageDialog, setOpenImageDialog] = useState(false); // Estado para el diálogo de imagen ampliada
-  const [selectedImage, setSelectedImage] = useState(""); // URL de la imagen seleccionada
-  const [openAddCustomerPopup, setOpenAddCustomerPopup] = useState(false); // Estado para mostrar el popup "Agregar Cliente"
-  const [openAddDomainPopup, setOpenAddDomainPopup] = useState(false); // Estado para mostrar el popup "Agregar Dominio"
-  const [openUserManagementPopup, setOpenUserManagementPopup] = useState(false); // Estado para gestión de usuarios
-  const [formData, setFormData] = useState({ name: "", domains: "" }); // Datos del formulario para agregar cliente
-  const [addAccountData, setAddAccountData] = useState({ name: "", email: "", password: "" }); // Datos del formulario para agregar cuenta
-  const [users, setUsers] = useState<User[]>([]); // Lista de usuarios
-  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false); // Estado para confirmar eliminación
-  const [userToDelete, setUserToDelete] = useState<User | null>(null); // Usuario a eliminar
-  const [openChangePasswordPopup, setOpenChangePasswordPopup] = useState(false); // Estado para cambiar contraseña
-  const [passwordData, setPasswordData] = useState({ password: "", confirmPassword: "" }); // Datos para cambiar contraseña
-  const [userManagementTab, setUserManagementTab] = useState(0); // Pestaña activa en gestión de usuarios
+  const [selectedView, setSelectedView] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState(""); 
+  const [darkMode, setDarkMode] = useState(false); 
+  const [openImageDialog, setOpenImageDialog] = useState(false); 
+  const [selectedImage, setSelectedImage] = useState(""); 
+  const [openAddCustomerPopup, setOpenAddCustomerPopup] = useState(false); 
+  const [openAddDomainPopup, setOpenAddDomainPopup] = useState(false); 
+  const [openUserManagementPopup, setOpenUserManagementPopup] = useState(false); 
+  const [formData, setFormData] = useState({ name: "", domains: "" }); 
+  const [addAccountData, setAddAccountData] = useState({ name: "", email: "", password: "" }); 
+  const [users, setUsers] = useState<User[]>([]);
+  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false); 
+  const [userToDelete, setUserToDelete] = useState<User | null>(null); 
+  const [openChangePasswordPopup, setOpenChangePasswordPopup] = useState(false); 
+  const [passwordData, setPasswordData] = useState({ password: "", confirmPassword: "" }); 
+  const [userManagementTab, setUserManagementTab] = useState(0); 
 
-  // Crear tema dinámico
   const theme = createTheme({
     palette: {
       mode: darkMode ? 'dark' : 'light',
@@ -124,7 +122,7 @@ const Dashboard: React.FC = () => {
 
   const handleOpenUserManagementPopup = () => {
     setOpenUserManagementPopup(true);
-    fetchUsers(); // Cargar usuarios al abrir el popup
+    fetchUsers(); 
   };
   const handleCloseUserManagementPopup = () => setOpenUserManagementPopup(false);
 
@@ -147,12 +145,10 @@ const Dashboard: React.FC = () => {
     setUserToDelete(null);
   };
 
-  // Función para manejar el cambio de tema
   const handleThemeToggle = () => {
     setDarkMode(!darkMode);
   };
 
-  // Función para manejar el click en las imágenes
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
     setOpenImageDialog(true);
@@ -163,7 +159,6 @@ const Dashboard: React.FC = () => {
     setSelectedImage("");
   };
 
-  // Función para manejar la búsqueda
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase();
     setSearchTerm(term);
@@ -206,6 +201,33 @@ const Dashboard: React.FC = () => {
       alert("Hubo un error al obtener los clientes. Verifica tu conexión o token.");
     }
   };
+  
+  const fetchUsers = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Token no encontrado. Inicia sesión nuevamente.");
+    return;
+  }
+
+  try {
+    const response = await axios.get(`${baseURL}/api/v1/users/list`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data && response.data.status && Array.isArray(response.data.data)) {
+      setUsers(response.data.data);
+    } else {
+      console.error("La API no devuelve la estructura esperada");
+      setUsers([]);
+    }
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    alert("Hubo un error al obtener los usuarios. Verifica tu conexión o token.");
+  }
+};
 
   const fetchSuspiciousDomains = async () => {
     const token = localStorage.getItem("token");
@@ -226,7 +248,7 @@ const Dashboard: React.FC = () => {
         setDominiosSospechosos(response.data.data);
         setFilteredDominiosSospechosos(response.data.data);
         setSelectedView("sospechosos");
-        setSearchTerm(""); // Limpiar búsqueda al cargar nuevos datos
+        setSearchTerm(""); 
       } else {
         console.error("La API no devuelve un array, revisa la estructura");
         setDominiosSospechosos([]);
@@ -239,55 +261,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const fetchUsers = async () => {
-    const token = localStorage.getItem("token");
+const handleDeleteUserSubmit = async () => {
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      alert("Token no encontrado. Inicia sesión nuevamente.");
-      return;
-    }
+  if (!token || !userToDelete) {
+    alert("Token no encontrado o usuario no seleccionado.");
+    return;
+  }
 
-    try {
-      const response = await axios.get(`${baseURL}/api/v1/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  try {
+    await axios.delete(`${baseURL}/api/v1/auth/deleteaccount`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      data: { email: userToDelete.email }
+    });
 
-      if (response.data && Array.isArray(response.data.data)) {
-        setUsers(response.data.data);
-      } else {
-        setUsers([]);
-      }
-    } catch (error) {
-      console.error("Error al obtener usuarios:", error);
-      setUsers([]);
-    }
-  };
-
-  const handleDeleteUserSubmit = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token || !userToDelete) {
-      alert("Token no encontrado o usuario no seleccionado.");
-      return;
-    }
-
-    try {
-      await axios.delete(`${baseURL}/api/v1/users/${userToDelete.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      alert("Usuario eliminado exitosamente.");
-      handleCloseDeleteUserDialog();
-      fetchUsers(); // Recargar lista de usuarios
-    } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-      alert("Hubo un error al eliminar el usuario. Intenta nuevamente.");
-    }
-  };
+    alert("Usuario eliminado exitosamente.");
+    handleCloseDeleteUserDialog();
+    fetchUsers(); // Recargar la lista de usuarios
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    alert("Hubo un error al eliminar el usuario. Intenta nuevamente.");
+  }
+};
 
   const handleAddCustomerSubmit = async () => {
     const token = localStorage.getItem("token");
@@ -349,36 +346,39 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleAddAccountSubmit = async () => {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      alert("Token no encontrado. Inicia sesión nuevamente.");
-      return;
-    }
 
-    try {
-      const payload = {
-        name: addAccountData.name,
-        email: addAccountData.email,
-        password: addAccountData.password,
-      };
 
-      await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+const handleAddAccountSubmit = async () => {
+  const token = localStorage.getItem("token");
 
-      alert("Cuenta agregada exitosamente.");
-      handleCloseUserManagementPopup();
-      fetchUsers();
-    } catch (error) {
-      console.error("Error al agregar cuenta:", error);
-      alert("Hubo un error al agregar la cuenta. Intenta nuevamente.");
-    }
-  };
+  if (!token) {
+    alert("Token no encontrado. Inicia sesión nuevamente.");
+    return;
+  }
+
+  try {
+    const payload = {
+      name: addAccountData.name,
+      email: addAccountData.email,
+      password: addAccountData.password,
+    };
+
+    await axios.post(`${baseURL}/api/v1/auth/createaccount`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    alert("Cuenta agregada exitosamente.");
+    setAddAccountData({ name: "", email: "", password: "" });
+    fetchUsers(); // Recargar la lista de usuarios
+  } catch (error) {
+    console.error("Error al agregar cuenta:", error);
+    alert("Hubo un error al agregar la cuenta. Intenta nuevamente.");
+  }
+};
 
   const handleChangePasswordSubmit = async () => {
     if (passwordData.password !== passwordData.confirmPassword) {
@@ -444,9 +444,7 @@ const Dashboard: React.FC = () => {
       );
     }
 
-
     const BASE_URL = "http://127.0.0.1:8000/uploads/";
-
     if (selectedView === "sospechosos") {
       return (
         <Box>
@@ -657,7 +655,6 @@ const Dashboard: React.FC = () => {
         {renderTable()}
       </Box>
 
-      {/* Dialog para imagen ampliada */}
       <Dialog
         open={openImageDialog}
         onClose={handleCloseImageDialog}
@@ -684,7 +681,6 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Popup para Gestión de Usuarios */}
       <Dialog 
         open={openUserManagementPopup} 
         onClose={handleCloseUserManagementPopup}
@@ -754,42 +750,45 @@ const Dashboard: React.FC = () => {
           {userManagementTab === 1 && (
             <Box>
               <Typography variant="h6" sx={{ mb: 2 }}>Eliminar Cuenta Existente</Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Nombre</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell align="center">Acción</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell align="center">
-                          <Button 
-                            variant="outlined" 
-                            color="error"
-                            onClick={() => handleOpenDeleteUserDialog(user)}
-                          >
-                            Eliminar
-                          </Button>
-                        </TableCell>
+              {users.length === 0 ? (
+                <Typography variant="body1" sx={{ p: 2, textAlign: 'center' }}>
+                  No hay usuarios registrados
+                </Typography>
+              ) : (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nombre</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell align="center">Acción</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.email}>
+                          <TableCell>{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell align="center">
+                            <Button 
+                              variant="outlined" 
+                              color="error"
+                              onClick={() => handleOpenDeleteUserDialog(user)}
+                            >
+                              Eliminar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Box>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Popup para Cambiar Contraseña */}
       <Dialog open={openChangePasswordPopup} onClose={handleCloseChangePasswordPopup}>
         <DialogTitle sx={{ 
           background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
@@ -830,7 +829,6 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog de Confirmación para Eliminar Usuario */}
       <Dialog open={openDeleteUserDialog} onClose={handleCloseDeleteUserDialog}>
         <DialogTitle sx={{ 
           background: 'linear-gradient(45deg, #d32f2f 30%, #f44336 90%)',
@@ -876,7 +874,6 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Popup para Agregar Cliente */}
       <Dialog open={openAddCustomerPopup} onClose={handleCloseAddCustomerPopup}>
         <DialogTitle>Agregar Cliente y Dominios</DialogTitle>
         <DialogContent>
@@ -903,7 +900,6 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Popup para Agregar más dominios */}
       <Dialog open={openAddDomainPopup} onClose={handleCloseAddDomainPopup}>
         <DialogTitle>Agregar Dominios</DialogTitle>
         <DialogContent>
